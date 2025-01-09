@@ -1,4 +1,7 @@
-Features
+ pip install shodan
+
+
+#Features
 
 Single API Key Validation: Validate individual Shodan API keys with clinical precision.
 
@@ -6,7 +9,7 @@ Batch API Key Testing: Load your arsenal of keys from a text file and unleash Po
 
 Paranoid Reporting: Get detailed feedback on API key validity, including associated account information such as:
 
-Plan
+#Plan
 
 Query Credits
 
@@ -14,6 +17,8 @@ Monitored IPs
 
 Error Resilience: Pokeden handles errors gracefully (so you don't have to).
 
+
+#
 Usage
 
 Single API Key Validation
