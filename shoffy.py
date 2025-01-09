@@ -2,6 +2,7 @@ import time
 import random
 import requests
 from urllib.parse import urlencode
+from bs4 import BeautifulSoup
 
 # Define user-agent list
 USER_AGENTS = [
@@ -47,33 +48,52 @@ def generate_random_queries(base_keywords, sites, parameters, num_queries=50):
     return queries
 
 # Function to perform dorking query
-def perform_dorking(query, delay=5):
+def perform_dorking(query, max_pages=5, delay=5):
     headers = {"User-Agent": random.choice(USER_AGENTS)}
-    url = f"https://www.google.com/search?{urlencode({'q': query})}"
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        return response.text
-    except requests.exceptions.RequestException as e:
-        print(f"Error querying {url}: {e}")
-        return None
+    base_url = "https://www.google.com/search?"
+    results = []
+
+    for page_num in range(max_pages):
+        start = page_num * 10  # Google search results are paginated every 10 results
+        params = {'q': query, 'start': start}
+        url = f"{base_url}{urlencode(params)}"
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+
+            # Parse the results page
+            soup = BeautifulSoup(response.text, "html.parser")
+            search_results = soup.find_all('div', class_='tF2Cxc')
+
+            for result in search_results:
+                link = result.find('a', href=True)
+                if link:
+                    results.append(link['href'])
+
+            print(f"Page {page_num + 1} results saved.")
+            time.sleep(random.randint(5, 10))  # Random delay between requests
+        except requests.exceptions.RequestException as e:
+            print(f"Error querying {url}: {e}")
+            continue
+
+    return results
 
 # Function to save results every 5 minutes
 def save_results_periodically(results, filename="dorking_results.txt", interval=5 * 60, pause_duration=60):
     while True:
         # Wait for the interval (5 minutes)
         time.sleep(interval)
-        
+
         # Save accumulated results
         if results:
             with open(filename, "a") as f:
                 for result in results:
                     f.write(result + "\n")
             print(f"Saved results to {filename}. Pausing for {pause_duration} seconds.")
-        
+
         # Clear results after saving
         results.clear()
-        
+
         # Pause for 1 minute
         time.sleep(pause_duration)
 
@@ -82,17 +102,17 @@ def main():
     # Keywords, sites, and parameters
     base_keywords = ["shodan key", "API key", "auth token", "password", "secret"]
     sites = [
-    "paste.mozilla.org", "ide.geeksforgeeks.org", "pastebin.com", "justpaste.it", "jsfiddle.net", 
-    "paste.centos.org", "justpaste.it", "jsbin.com", "pastelink.net", "codebeautify.org", 
-    "controlc.com", "ideone.com", "paste.rohitab.com", "codeshare.io", "paste.opensuse.org", 
-    "dotnetfiddle.net", "notes.io", "paste2.org", "hastebin.com", "ivpaste.com", 
-    "justpaste.me", "pastebin.osuosl.org", "bpa.st", "paste.ofcode.org", "paste.ee", 
-    "dpaste.org", "friendpaste.com", "defuse.ca/pastebin.htm", "dpaste.com", "cl1p.net", 
-    "pastie.org", "pastecode.io", "pastebin.fr", "jsitor.com", "termbin.com", 
-    "p.ip.fi", "cutapaste.net", "paste.sh", "paste.jp", "paste-bin.xyz", 
-    "paste.debian.net", "vpaste.net", "paste.org.ru", "quickhighlighter.com", "commie.io", 
-    "everfall.com/paste/", "kpaste.net", "pastebin.pt", "n0paste.tk", "tutpaste.com", 
-    "bitbin.it", "pastebin.fi", "nekobin.com", "paste4btc.com", "pastejustit.com", 
+    "paste.mozilla.org", "ide.geeksforgeeks.org", "pastebin.com", "justpaste.it", "jsfiddle.net",
+    "paste.centos.org", "justpaste.it", "jsbin.com", "pastelink.net", "codebeautify.org",
+    "controlc.com", "ideone.com", "paste.rohitab.com", "codeshare.io", "paste.opensuse.org",
+    "dotnetfiddle.net", "notes.io", "paste2.org", "hastebin.com", "ivpaste.com",
+    "justpaste.me", "pastebin.osuosl.org", "bpa.st", "paste.ofcode.org", "paste.ee",
+    "dpaste.org", "friendpaste.com", "defuse.ca/pastebin.htm", "dpaste.com", "cl1p.net",
+    "pastie.org", "pastecode.io", "pastebin.fr", "jsitor.com", "termbin.com",
+    "p.ip.fi", "cutapaste.net", "paste.sh", "paste.jp", "paste-bin.xyz",
+    "paste.debian.net", "vpaste.net", "paste.org.ru", "quickhighlighter.com", "commie.io",
+    "everfall.com/paste/", "kpaste.net", "pastebin.pt", "n0paste.tk", "tutpaste.com",
+    "bitbin.it", "pastebin.fi", "nekobin.com", "paste4btc.com", "pastejustit.com",
     "paste.js.org", "pastefs.com", "paste.mod.gg", "paste.myst.rs"
     ]
     parameters = ["api", "key", "password", "token", "auth"]
@@ -113,7 +133,7 @@ def main():
         result = perform_dorking(query)
         if result:
             results.append(result)
-        
+
         # Random delay between requests
         time.sleep(random.randint(5, 10))  # Randomized delay
 
