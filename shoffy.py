@@ -81,7 +81,20 @@ def save_results_periodically(results, filename="dorking_results.txt", interval=
 def main():
     # Keywords, sites, and parameters
     base_keywords = ["shodan key", "API key", "auth token", "password", "secret"]
-    sites = ["github.com", "pastebin.com", "gitlab.com", "bitbucket.org", "trello.com"]
+    sites = [
+    "paste.mozilla.org", "ide.geeksforgeeks.org", "pastebin.com", "justpaste.it", "jsfiddle.net", 
+    "paste.centos.org", "justpaste.it", "jsbin.com", "pastelink.net", "codebeautify.org", 
+    "controlc.com", "ideone.com", "paste.rohitab.com", "codeshare.io", "paste.opensuse.org", 
+    "dotnetfiddle.net", "notes.io", "paste2.org", "hastebin.com", "ivpaste.com", 
+    "justpaste.me", "pastebin.osuosl.org", "bpa.st", "paste.ofcode.org", "paste.ee", 
+    "dpaste.org", "friendpaste.com", "defuse.ca/pastebin.htm", "dpaste.com", "cl1p.net", 
+    "pastie.org", "pastecode.io", "pastebin.fr", "jsitor.com", "termbin.com", 
+    "p.ip.fi", "cutapaste.net", "paste.sh", "paste.jp", "paste-bin.xyz", 
+    "paste.debian.net", "vpaste.net", "paste.org.ru", "quickhighlighter.com", "commie.io", 
+    "everfall.com/paste/", "kpaste.net", "pastebin.pt", "n0paste.tk", "tutpaste.com", 
+    "bitbin.it", "pastebin.fi", "nekobin.com", "paste4btc.com", "pastejustit.com", 
+    "paste.js.org", "pastefs.com", "paste.mod.gg", "paste.myst.rs"
+    ]
     parameters = ["api", "key", "password", "token", "auth"]
 
     # Generate random queries
