@@ -15,28 +15,7 @@ USER_AGENTS = [
 ]
 
 # Dorking methods
-DORKING_METHODS = [
-    "site:{site} {keyword}",
-    "{keyword} filetype:txt",
-    "{keyword} filetype:log",
-    "{keyword} intitle:{param}",
-    "{keyword} inurl:api",
-    "site:{site} inurl:{keyword}",
-    "{keyword} ext:env",
-    "{keyword} ext:conf",
-    "{keyword} ext:json",
-    "site:{site} {keyword} ext:xml",
-    "{keyword} inurl:{param}",
-    "{keyword} intext:{param}",
-    "site:{site} intext:{keyword}",
-    "{keyword} site:pastebin.com",
-    "{keyword} site:github.com",
-    "{keyword} site:gitlab.com",
-    "{keyword} \"{param}\"",
-    "{keyword} password",
-    "{keyword} auth",
-    "{keyword} token",
-]
+DORKING_METHODS = ["{site} {keyword}"]
 
 # Ensure file exists and prompt user to fill it
 def ensure_file_exists(filename, example_data):
