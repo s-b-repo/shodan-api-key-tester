@@ -19,7 +19,7 @@ DORKING_METHODS = [
     "site:{site} {keyword}",
     "{keyword} filetype:txt",
     "{keyword} filetype:log",
-    "{keyword} intitle:index.of",
+    "{keyword} intitle:{param}",
     "{keyword} inurl:api",
     "site:{site} inurl:{keyword}",
     "{keyword} ext:env",
@@ -129,11 +129,12 @@ def save_printed_results(results_queue, filename="dorking_results.txt", interval
 # Main function
 def main():
     # Keywords
-    base_keywords = ["shodan key", "API key", "auth token", "password", "secret"]
+
 
     # Ensure parameters.txt and sites.txt exist
     parameters = ensure_file_exists("parameters.txt", ["api", "key", "password", "auth"])
     sites = ensure_file_exists("sites.txt", ["example.com", "pastebin.com", "github.com"])
+    base_keywords = parameters
 
     if not parameters:
         print("No parameters loaded. Please fill 'parameters.txt' with valid entries.")
