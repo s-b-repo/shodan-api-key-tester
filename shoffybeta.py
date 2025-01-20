@@ -1,8 +1,11 @@
 import time
 import random
 import requests
+import threading
 from urllib.parse import urlencode
 from bs4 import BeautifulSoup
+from queue import Queue
+import os
 
 # Define user-agent list
 USER_AGENTS = [
@@ -35,8 +38,29 @@ DORKING_METHODS = [
     "{keyword} token",
 ]
 
+# Ensure file exists and prompt user to fill it
+def ensure_file_exists(filename, example_data):
+    if not os.path.exists(filename):
+        with open(filename, "w") as file:
+            file.write("\n".join(example_data))
+        print(f"Created '{filename}'. Please fill it with relevant data (one entry per line).")
+    return read_from_file(filename)
+
+# Read data from a file
+def read_from_file(filename):
+    try:
+        with open(filename, "r") as file:
+            data = [line.strip() for line in file if line.strip()]
+        return data
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.")
+        return []
+
 # Function to generate random queries
-def generate_random_queries(base_keywords, sites, parameters, num_queries=50):
+def generate_random_queries(base_keywords, sites, parameters, num_queries=1000):
+    if not base_keywords or not sites or not parameters:
+        raise ValueError("Keywords, sites, and parameters must not be empty.")
+
     queries = []
     for _ in range(num_queries):
         method = random.choice(DORKING_METHODS)
@@ -47,8 +71,8 @@ def generate_random_queries(base_keywords, sites, parameters, num_queries=50):
         queries.append(query)
     return queries
 
-# Function to perform dorking query and handle pagination
-def perform_dorking(query, max_pages=5, delay=5):
+# Function to perform dorking query
+def perform_dorking(query, max_pages=5, delay=10, results_queue=None):
     headers = {"User-Agent": random.choice(USER_AGENTS)}
     base_url = "https://www.google.com/search?"
     results = []
@@ -60,7 +84,7 @@ def perform_dorking(query, max_pages=5, delay=5):
         try:
             response = requests.get(url, headers=headers)
             response.raise_for_status()
-            
+
             # Parse the results page
             soup = BeautifulSoup(response.text, "html.parser")
             search_results = soup.find_all('div', class_='tF2Cxc')
@@ -68,64 +92,78 @@ def perform_dorking(query, max_pages=5, delay=5):
             for result in search_results:
                 link = result.find('a', href=True)
                 if link:
-                    results.append(link['href'])
-        
-            print(f"Page {page_num + 1} results saved.")
-            time.sleep(random.randint(5, 10))  # Random delay between requests
+                    result_url = link['href']
+                    results.append(result_url)
+                    print(f"Found result: {result_url}")  # Print the result
+                    if results_queue:
+                        results_queue.put(result_url)  # Add to queue for saving
+
+            print(f"Page {page_num + 1} results processed.")
+            time.sleep(delay)  # Controlled delay
         except requests.exceptions.RequestException as e:
             print(f"Error querying {url}: {e}")
             continue
 
     return results
 
-# Function to save results every 5 minutes
-def save_results_periodically(results, filename="dorking_results.txt", interval=5 * 60, pause_duration=60):
+# Function to save printed results
+def save_printed_results(results_queue, filename="dorking_results.txt", interval=3):
+    saved_results = set()
+
     while True:
-        # Wait for the interval (5 minutes)
         time.sleep(interval)
-        
-        # Save accumulated results
-        if results:
+
+        new_results = []
+        while not results_queue.empty():
+            result = results_queue.get()
+            if result not in saved_results:
+                saved_results.add(result)
+                new_results.append(result)
+
+        if new_results:
             with open(filename, "a") as f:
-                for result in results:
+                for result in new_results:
                     f.write(result + "\n")
-            print(f"Saved results to {filename}. Pausing for {pause_duration} seconds.")
-        
-        # Clear results after saving
-        results.clear()
-        
-        # Pause for 1 minute
-        time.sleep(pause_duration)
+            print(f"Saved {len(new_results)} results to {filename}.")
 
 # Main function
 def main():
-    # Keywords, sites, and parameters
+    # Keywords
     base_keywords = ["shodan key", "API key", "auth token", "password", "secret"]
-    sites = ["github.com", "pastebin.com", "gitlab.com", "bitbucket.org", "trello.com"]
-    parameters = ["api", "key", "password", "token", "auth"]
+
+    # Ensure parameters.txt and sites.txt exist
+    parameters = ensure_file_exists("parameters.txt", ["api", "key", "password", "auth"])
+    sites = ensure_file_exists("sites.txt", ["example.com", "pastebin.com", "github.com"])
+
+    if not parameters:
+        print("No parameters loaded. Please fill 'parameters.txt' with valid entries.")
+        return
+
+    if not sites:
+        print("No sites loaded. Please fill 'sites.txt' with valid entries.")
+        return
 
     # Generate random queries
     queries = generate_random_queries(base_keywords, sites, parameters, num_queries=100)
     results_file = "dorking_results.txt"
     query_log_file = "dorking_queries.txt"
 
-    # List to store the results
-    results = []
+    # Queue to store results
+    results_queue = Queue()
+
+    # Start the saving thread
+    threading.Thread(target=save_printed_results, args=(results_queue, results_file), daemon=True).start()
 
     # Perform dorking and collect results
     for query in queries:
         print(f"Performing query: {query}")
         with open(query_log_file, "a") as log_file:
             log_file.write(query + "\n")  # Log query
-        page_results = perform_dorking(query)
-        if page_results:
-            results.extend(page_results)
-        
-        # Random delay between requests
-        time.sleep(random.randint(5, 10))  # Randomized delay
 
-    # Save results periodically in the background
-    save_results_periodically(results, filename=results_file)
+        perform_dorking(query, results_queue=results_queue)
+
+        # Random delay between requests
+        time.sleep(random.randint(10, 20))
 
 if __name__ == "__main__":
     main()
